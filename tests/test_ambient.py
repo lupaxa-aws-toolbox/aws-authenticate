@@ -72,7 +72,7 @@ def test_instance_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(
         "lupaxa.aws_authenticate.session.InstanceMetadataFetcher",
-        lambda: _Fetcher(),
+        _Fetcher,
     )
     session = AuthenticatedSession.from_instance_metadata()
     assert session.method == "iam-role"
@@ -81,10 +81,14 @@ def test_instance_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_instance_metadata_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _EmptyFetcher:
+        def retrieve_iam_role_credentials(self) -> dict[str, str]:
+            return {}
+
     monkeypatch.delenv("AWS_EC2_METADATA_DISABLED", raising=False)
     monkeypatch.setattr(
         "lupaxa.aws_authenticate.session.InstanceMetadataFetcher",
-        lambda: type("F", (), {"retrieve_iam_role_credentials": lambda self: {}})(),
+        _EmptyFetcher,
     )
     with pytest.raises(CredentialsNotFoundError):
         AuthenticatedSession.from_instance_metadata()
@@ -110,7 +114,7 @@ def test_container(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(
         "lupaxa.aws_authenticate.session.ContainerMetadataFetcher",
-        lambda: _Fetcher(),
+        _Fetcher,
     )
     session = AuthenticatedSession.from_container()
     assert session.method == "container-role"
