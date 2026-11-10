@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lupaxa-aws-authenticate"
+dynamic = ["version"]
+description = "Resolve any AWS credential source into one boto3 session."
+readme = "README.md"
+requires-python = ">=3.13"
+license = "MIT"
+license-files = ["LICENCE"]
+authors = [{ name = "The Lupaxa Project" }]
+maintainers = [{ name = "The Lupaxa Project" }]
+keywords = ["aws", "authentication", "boto3"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Natural Language :: English",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development",
+]
+dependencies = ["boto3>=1.35.0,<2"]
+
+[project.optional-dependencies]
+dev = [
+  "hatch>=1.12.0",
+  "mypy>=1.17.0,<2.0.0",
+  "pytest>=8.4.0,<9.0.0",
+  "pytest-cov>=6.2.0,<7.0.0",
+  "ruff>=0.12.0,<1.0.0",
+]
+test = ["pytest>=8.4.0,<9.0.0", "pytest-cov>=6.2.0,<7.0.0"]
+
+[project.urls]
+Homepage = "https://github.com/lupaxa-aws-toolbox/aws-authenticate"
+Repository = "https://github.com/lupaxa-aws-toolbox/aws-authenticate"
+Issues = "https://github.com/lupaxa-aws-toolbox/aws-authenticate/issues"
+
+[tool.hatch.version]
+path = "src/lupaxa/aws_authenticate/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/**", "README.md", "LICENCE"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lupaxa"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "S", "UP", "SIM", "C4", "ISC", "D", "ANN", "PT"]
+ignore = [
+  "D200", "D201", "D202", "D203", "D204", "D205", "D206", "D207", "D208",
+  "D209", "D210", "D211", "D212", "ISC001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["ANN", "D", "S101", "S105", "S106"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["lupaxa"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["src", "tests"]
+mypy_path = "src"
+explicit_package_bases = true
+namespace_packages = true
+packages = ["lupaxa.aws_authenticate"]
+strict = true
+ignore_missing_imports = true
+warn_unreachable = true
+warn_unused_configs = true
+exclude = ["^build/", "^dist/"]
