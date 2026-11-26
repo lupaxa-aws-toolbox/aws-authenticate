@@ -30,11 +30,11 @@ class _OidcClient(Protocol):
 
     def register_client(self, *, clientName: str, clientType: str, grantTypes: list[str], redirectUris: list[str], issuerUrl: str, scopes: list[str]) -> Mapping[str, object]:
         """Register a public OIDC client."""
-        ...
+        raise NotImplementedError
 
     def create_token(self, *, grantType: str, clientId: str, clientSecret: str, code: str, codeVerifier: str, redirectUri: str) -> Mapping[str, object]:
         """Exchange an authorization code for an access token."""
-        ...
+        raise NotImplementedError
 
 
 class _CallbackServer(ThreadingHTTPServer):
