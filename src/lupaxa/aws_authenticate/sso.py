@@ -28,29 +28,13 @@ _OIDC_ERRORS = (ClientError, BotoCoreError, OSError)
 class _OidcClient(Protocol):
     """Unsigned SSO OIDC client methods this login flow calls."""
 
-    def register_client(
-        self,
-        *,
-        clientName: str,
-        clientType: str,
-        grantTypes: list[str],
-        redirectUris: list[str],
-        issuerUrl: str,
-        scopes: list[str],
-    ) -> Mapping[str, object]:
+    def register_client(self, *, clientName: str, clientType: str, grantTypes: list[str], redirectUris: list[str], issuerUrl: str, scopes: list[str]) -> Mapping[str, object]:
         """Register a public OIDC client."""
+        ...
 
-    def create_token(
-        self,
-        *,
-        grantType: str,
-        clientId: str,
-        clientSecret: str,
-        code: str,
-        codeVerifier: str,
-        redirectUri: str,
-    ) -> Mapping[str, object]:
+    def create_token(self, *, grantType: str, clientId: str, clientSecret: str, code: str, codeVerifier: str, redirectUri: str) -> Mapping[str, object]:
         """Exchange an authorization code for an access token."""
+        ...
 
 
 class _CallbackServer(ThreadingHTTPServer):
@@ -59,11 +43,7 @@ class _CallbackServer(ThreadingHTTPServer):
     callback_path: str
     query: str | None
 
-    def __init__(
-        self,
-        server_address: tuple[str, int],
-        request_handler_class: type[BaseHTTPRequestHandler],
-    ) -> None:
+    def __init__(self, server_address: tuple[str, int], request_handler_class: type[BaseHTTPRequestHandler]) -> None:
         """Bind the callback server and start with an empty query."""
         self.callback_path = "/oauth/callback"
         self.query = None
@@ -94,12 +74,7 @@ class _CallbackHandler(BaseHTTPRequestHandler):
         return
 
 
-def login_sso(
-    *,
-    start_url: str,
-    sso_region: str,
-    session_name: str | None = None,
-) -> None:
+def login_sso(*, start_url: str, sso_region: str, session_name: str | None = None) -> None:
     """Log in through IAM Identity Center and cache the access token."""
     verifier = secrets.token_urlsafe(64)
     challenge = _code_challenge(verifier)
@@ -161,14 +136,7 @@ def login_sso(
     )
 
 
-def _authorization_code(
-    *,
-    authorize_url: str,
-    redirect_uri: str,
-    state: str,
-    opener: Callable[[str], bool] | None = None,
-    server: _CallbackServer | None = None,
-) -> str:
+def _authorization_code(*, authorize_url: str, redirect_uri: str, state: str, opener: Callable[[str], bool] | None = None, server: _CallbackServer | None = None) -> str:
     """Open the authorize URL and return the callback code."""
     if server is not None:
         path = urlparse(redirect_uri).path
@@ -199,14 +167,7 @@ def _oidc_client(sso_region: str) -> _OidcClient:
     return cast("_OidcClient", client)
 
 
-def _authorize_url(
-    *,
-    sso_region: str,
-    client_id: str,
-    redirect_uri: str,
-    state: str,
-    code_challenge: str,
-) -> str:
+def _authorize_url(*, sso_region: str, client_id: str, redirect_uri: str, state: str, code_challenge: str) -> str:
     query = urlencode(
         {
             "response_type": "code",
@@ -260,16 +221,7 @@ def _registration_expires_at(value: object) -> str | None:
     return datetime.fromtimestamp(value, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _save_token(
-    *,
-    start_url: str,
-    sso_region: str,
-    session_name: str | None,
-    client_id: str,
-    client_secret: str,
-    registration_expires_at: str | None,
-    created: Mapping[str, object],
-) -> None:
+def _save_token(*, start_url: str, sso_region: str, session_name: str | None, client_id: str, client_secret: str, registration_expires_at: str | None, created: Mapping[str, object]) -> None:
     expires_in = created.get("expiresIn")
     if isinstance(expires_in, bool) or not isinstance(expires_in, int | float):
         raise LoginError("SSO login did not return a token expiry")

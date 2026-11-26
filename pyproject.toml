@@ -7,7 +7,7 @@ name = "lupaxa-aws-authenticate"
 dynamic = ["version"]
 description = "Resolve any AWS credential source into one boto3 session."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENCE"]
 authors = [{ name = "The Lupaxa Project" }]
@@ -21,6 +21,8 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Software Development",
@@ -56,8 +58,8 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 
 [tool.ruff]
-target-version = "py313"
-line-length = 88
+target-version = "py311"
+line-length = 200
 src = ["src", "tests"]
 
 [tool.ruff.lint]
@@ -74,7 +76,7 @@ ignore = [
 known-first-party = ["lupaxa"]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 files = ["src", "tests"]
 mypy_path = "src"
 explicit_package_bases = true

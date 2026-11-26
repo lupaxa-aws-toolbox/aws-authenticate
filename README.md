@@ -18,7 +18,7 @@ The session is a boto3 `Session`. It adds two attributes:
 
 An explicit constructor uses only the source you name. `from_chain` and `from_profile` use botocore's standard chain, and they open a browser once when an IAM Identity Center token is missing or expired.
 
-Requires Python 3.13 or newer.
+Requires Python 3.11 or newer.
 
 ## Install
 

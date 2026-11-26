@@ -17,9 +17,7 @@ def test_second_read_sees_the_refresh() -> None:
             "access_key": "AKIA_REFRESH",
             "secret_key": "refresh-secret",
             "token": f"token-{calls['n']}",
-            "expiry_time": (datetime.now(UTC) + timedelta(hours=1)).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
-            ),
+            "expiry_time": (datetime.now(UTC) + timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
 
     class _Provider:

@@ -56,10 +56,7 @@ def require_text(value: str | None, name: str) -> str:
     return value.strip()
 
 
-def _install(
-    provider: object,
-    region: str | None,
-) -> botocore.session.Session:
+def _install(provider: object, region: str | None) -> botocore.session.Session:
     raw = botocore.session.Session()
     raw.register_component("credential_provider", CredentialResolver([provider]))
     if region is not None:
@@ -83,11 +80,7 @@ class _HoldingProvider:
 class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
     """boto3 session plus ``method`` and ``credentials``."""
 
-    def __init__(
-        self,
-        botocore_session: botocore.session.Session,
-        method: str,
-    ) -> None:
+    def __init__(self, botocore_session: botocore.session.Session, method: str) -> None:
         """Keep the botocore session that owns the credential provider."""
         super().__init__(botocore_session=botocore_session)
         self.method = method
@@ -102,13 +95,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         return AwsCredentials(frozen.access_key, frozen.secret_key, frozen.token)
 
     @classmethod
-    def from_keys(
-        cls,
-        access_key: str,
-        secret_key: str,
-        session_token: str | None = None,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_keys(cls, access_key: str, secret_key: str, session_token: str | None = None, region: str | None = None) -> AuthenticatedSession:
         """Return a session for the access key and secret passed in."""
         key = require_text(access_key, "access_key")
         secret = require_text(secret_key, "secret_key")
@@ -126,11 +113,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         )
 
     @classmethod
-    def from_chain(
-        cls,
-        profile: str | None = None,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_chain(cls, profile: str | None = None, region: str | None = None) -> AuthenticatedSession:
         """Resolve botocore's standard chain, optionally for one profile."""
         raw = botocore.session.Session(profile=profile)
         if region is not None:
@@ -138,15 +121,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         return _open_sso(raw)
 
     @classmethod
-    def from_sso(
-        cls,
-        start_url: str,
-        sso_region: str,
-        account_id: str,
-        role_name: str,
-        *,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_sso(cls, start_url: str, sso_region: str, account_id: str, role_name: str, *, region: str | None = None) -> AuthenticatedSession:
         """Return a session for an IAM Identity Center account role."""
         start = require_text(start_url, "start_url")
         portal_region = require_text(sso_region, "sso_region")
@@ -187,11 +162,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
             return _open_sso(raw, method="sso")
 
     @classmethod
-    def from_profile(
-        cls,
-        name: str,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_profile(cls, name: str, region: str | None = None) -> AuthenticatedSession:
         """Resolve one named profile through the standard chain."""
         name = require_text(name, "name")
         return cls.from_chain(profile=name, region=region)
@@ -309,15 +280,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         )
 
     @classmethod
-    def from_saml(
-        cls,
-        role_arn: str,
-        principal_arn: str,
-        assertion: str,
-        *,
-        duration_seconds: int | None = None,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_saml(cls, role_arn: str, principal_arn: str, assertion: str, *, duration_seconds: int | None = None, region: str | None = None) -> AuthenticatedSession:
         """Return a session with STS credentials from a SAML assertion."""
         arn = require_text(role_arn, "role_arn")
         principal = require_text(principal_arn, "principal_arn")
@@ -360,11 +323,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         return open_session(_install(provider, region), method="saml")
 
     @classmethod
-    def from_process(
-        cls,
-        command: str,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_process(cls, command: str, region: str | None = None) -> AuthenticatedSession:
         """Return a session whose keys come from an external credential process."""
         cred_process = require_text(command, "command")
         profile_name = "aws-authenticate"
@@ -383,10 +342,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         )
 
     @classmethod
-    def from_instance_metadata(
-        cls,
-        region: str | None = None,
-    ) -> AuthenticatedSession:
+    def from_instance_metadata(cls, region: str | None = None) -> AuthenticatedSession:
         """Return a session for the EC2 instance IAM role."""
         provider = InstanceMetadataProvider(InstanceMetadataFetcher())
         return open_session(_install(provider, region), method="iam-role")
@@ -415,10 +371,7 @@ def map_aws_error(exc: BaseException) -> AuthenticationError:
     return AuthenticationError(str(exc))
 
 
-def open_session(
-    botocore_session: botocore.session.Session,
-    method: str | None,
-) -> AuthenticatedSession:
+def open_session(botocore_session: botocore.session.Session, method: str | None) -> AuthenticatedSession:
     """Resolve once and return the session. ``method`` overrides the provider label."""
     try:
         resolved = botocore_session.get_credentials()
@@ -437,10 +390,7 @@ def open_session(
     return AuthenticatedSession(botocore_session, label)
 
 
-def _open_sso(
-    raw: botocore.session.Session,
-    method: str | None = None,
-) -> AuthenticatedSession:
+def _open_sso(raw: botocore.session.Session, method: str | None = None) -> AuthenticatedSession:
     """Resolve a session, logging in once when the SSO token is unusable."""
     try:
         return open_session(raw, method=method)
@@ -483,9 +433,7 @@ def _sso_session_name(start_url: str) -> str:
     return f"aws-authenticate-{digest[:12]}"
 
 
-def _sso_login_target(
-    raw: botocore.session.Session,
-) -> tuple[str, str, str | None]:
+def _sso_login_target(raw: botocore.session.Session) -> tuple[str, str, str | None]:
     loaded = raw.full_config
     profiles = loaded.get("profiles", {})
     if not isinstance(profiles, dict):
@@ -507,10 +455,7 @@ def _sso_login_target(
     raise LoginError("SSO login needs a start URL and region")
 
 
-def _profile_sso_target(
-    loaded: object,
-    profile: dict[str, object],
-) -> tuple[str, str, str | None]:
+def _profile_sso_target(loaded: object, profile: dict[str, object]) -> tuple[str, str, str | None]:
     session_name = profile.get("sso_session")
     if isinstance(session_name, str) and session_name.strip():
         name = session_name.strip()
@@ -541,14 +486,7 @@ def _sso_text(value: object) -> str:
     return ""
 
 
-def _write_sso_files(
-    directory: Path,
-    session_name: str,
-    start_url: str,
-    sso_region: str,
-    account_id: str,
-    role_name: str,
-) -> tuple[Path, Path]:
+def _write_sso_files(directory: Path, session_name: str, start_url: str, sso_region: str, account_id: str, role_name: str) -> tuple[Path, Path]:
     config_path = directory / "config"
     credentials_path = directory / "credentials"
     config_path.write_text(

@@ -176,9 +176,7 @@ def test_assume_role_mfa_prompt_without_tty(monkeypatch: pytest.MonkeyPatch) -> 
     assert type(caught.value) is MfaRequiredError
 
 
-def test_assume_role_rejects_whitespace_mfa_code(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_assume_role_rejects_whitespace_mfa_code(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_assume(monkeypatch, _ok())
     with pytest.raises(ValueError, match="mfa_code"):
         AuthenticatedSession.from_assume_role(

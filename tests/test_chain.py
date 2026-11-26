@@ -18,10 +18,7 @@ def _aws_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) -> No
     monkeypatch.setenv("AWS_CONFIG_FILE", str(config))
 
 
-def test_profile_and_chain_return_the_same_keys(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_profile_and_chain_return_the_same_keys(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _aws_files(
         tmp_path,
         monkeypatch,
@@ -36,10 +33,7 @@ def test_profile_and_chain_return_the_same_keys(
     assert via_chain.credentials == expected
 
 
-def test_padded_profile_name_matches_exact(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_padded_profile_name_matches_exact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _aws_files(
         tmp_path,
         monkeypatch,
@@ -53,10 +47,7 @@ def test_padded_profile_name_matches_exact(
     assert exact.credentials == padded.credentials
 
 
-def test_unknown_profile_is_missing(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_unknown_profile_is_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _aws_files(
         tmp_path,
         monkeypatch,

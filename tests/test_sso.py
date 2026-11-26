@@ -39,13 +39,7 @@ def _cache_file(home: Path, session_name: str | None) -> Path:
     return home / ".aws" / "sso" / "cache" / f"{key}.json"
 
 
-def _seed(
-    home: Path,
-    session_name: str | None,
-    *,
-    access_token: str | None = None,
-    expires_at: str = "2999-01-01T00:00:00Z",
-) -> None:
+def _seed(home: Path, session_name: str | None, *, access_token: str | None = None, expires_at: str = "2999-01-01T00:00:00Z") -> None:
     path = _cache_file(home, session_name)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -62,11 +56,7 @@ def _seed(
 
 
 def _patch_role(monkeypatch: pytest.MonkeyPatch, result: object) -> None:
-    def fake_make_api_call(
-        self: object,
-        operation_name: str,
-        params: dict[str, object],
-    ) -> object:
+    def fake_make_api_call(self: object, operation_name: str, params: dict[str, object]) -> object:
         if operation_name == "GetRoleCredentials":
             if isinstance(result, Exception):
                 raise result
@@ -90,10 +80,7 @@ def _role_payload() -> dict[str, object]:
     }
 
 
-def test_cached_token_skips_login(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_cached_token_skips_login(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     _seed(tmp_path, _session_name(START))
 
@@ -107,10 +94,7 @@ def test_cached_token_skips_login(
     assert session.credentials == AwsCredentials("ASIA_SSO", "sso-secret", "sso-token")
 
 
-def test_missing_token_logs_in_once(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_missing_token_logs_in_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     calls = {"n": 0}
 
@@ -151,10 +135,7 @@ def test_role_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         AuthenticatedSession.from_sso(START, "us-east-1", ACCOUNT, ROLE)
 
 
-def test_login_sso_writes_the_cache(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_login_sso_writes_the_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
 
     class _Oidc:
@@ -184,14 +165,10 @@ def test_login_sso_writes_the_cache(
         lambda **kwargs: "auth-code",
     )
     login_sso(start_url=START, sso_region="us-east-1", session_name="aws-authenticate")
-    cached = json.loads(
-        _cache_file(tmp_path, "aws-authenticate").read_text(encoding="utf-8")
-    )
+    cached = json.loads(_cache_file(tmp_path, "aws-authenticate").read_text(encoding="utf-8"))
     assert cached["accessToken"] == "fresh-token"
     assert cached["startUrl"] == START
-    expected_expiry = datetime.fromtimestamp(4102444800, UTC).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    expected_expiry = datetime.fromtimestamp(4102444800, UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     assert cached["registrationExpiresAt"] == expected_expiry
 
 
@@ -205,10 +182,7 @@ def test_browser_cannot_open() -> None:
         )
 
 
-def test_expired_sso_token_logs_in_once(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_expired_sso_token_logs_in_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     name = _session_name(START)
     _seed(
@@ -231,18 +205,11 @@ def test_expired_sso_token_logs_in_once(
     assert session.credentials.access_key_id == "ASIA_SSO"
 
 
-def test_register_client_sends_authorization_code_grant(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_register_client_sends_authorization_code_grant(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     seen: dict[str, object] = {}
 
-    def fake_make_api_call(
-        self: object,
-        operation_name: str,
-        params: dict[str, object],
-    ) -> object:
+    def fake_make_api_call(self: object, operation_name: str, params: dict[str, object]) -> object:
         if operation_name == "RegisterClient":
             seen.update(params)
             return {
@@ -272,10 +239,7 @@ def test_register_client_sends_authorization_code_grant(
     assert str(redirect_uris[0]).endswith("/oauth/callback")
 
 
-def test_missing_registration_expiry_is_omitted(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_missing_registration_expiry_is_omitted(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
 
     class _Oidc:
@@ -303,10 +267,7 @@ def test_missing_registration_expiry_is_omitted(
     assert "None" not in json.dumps(cached)
 
 
-def _raise_token_error(
-    raw: object,
-    method: str | None = None,
-) -> AuthenticatedSession:
+def _raise_token_error(raw: object, method: str | None = None) -> AuthenticatedSession:
     raise AuthenticationError("missing token") from SSOTokenLoadError(
         error_msg="missing",
     )
@@ -322,10 +283,7 @@ def _config_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) ->
     monkeypatch.setenv("HOME", str(tmp_path))
 
 
-def test_empty_sso_target_does_not_log_in(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_empty_sso_target_does_not_log_in(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _config_files(
         tmp_path,
         monkeypatch,
@@ -355,10 +313,7 @@ def test_empty_sso_target_does_not_log_in(
     assert calls["n"] == 0
 
 
-def test_sso_login_walks_to_source_profile(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_sso_login_walks_to_source_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _config_files(
         tmp_path,
         monkeypatch,
@@ -397,10 +352,7 @@ def test_sso_login_walks_to_source_profile(
     assert seen["session_name"] == "portal"
 
 
-def test_two_start_urls_use_distinct_cache_files(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_two_start_urls_use_distinct_cache_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     names: list[str] = []
 
