@@ -9,11 +9,7 @@ import pytest
 from botocore.exceptions import ClientError, SSOTokenLoadError
 
 from lupaxa.aws_authenticate.credentials import AwsCredentials
-from lupaxa.aws_authenticate.errors import (
-    AuthenticationError,
-    LoginError,
-    RoleAssumptionError,
-)
+from lupaxa.aws_authenticate.errors import AuthenticationError, LoginError, RoleAssumptionError
 from lupaxa.aws_authenticate.session import AuthenticatedSession
 from lupaxa.aws_authenticate.sso import _authorization_code, login_sso
 
@@ -63,10 +59,7 @@ def _patch_role(monkeypatch: pytest.MonkeyPatch, result: object) -> None:
             return result
         raise AssertionError(operation_name)
 
-    monkeypatch.setattr(
-        "botocore.client.BaseClient._make_api_call",
-        fake_make_api_call,
-    )
+    monkeypatch.setattr("botocore.client.BaseClient._make_api_call", fake_make_api_call)
 
 
 def _role_payload() -> dict[str, object]:
@@ -124,13 +117,7 @@ def test_login_failure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 def test_role_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     _seed(tmp_path, _session_name(START))
-    _patch_role(
-        monkeypatch,
-        ClientError(
-            {"Error": {"Code": "ForbiddenException", "Message": "no such role"}},
-            "GetRoleCredentials",
-        ),
-    )
+    _patch_role(monkeypatch, ClientError({"Error": {"Code": "ForbiddenException", "Message": "no such role"}}, "GetRoleCredentials"))
     with pytest.raises(RoleAssumptionError):
         AuthenticatedSession.from_sso(START, "us-east-1", ACCOUNT, ROLE)
 
@@ -160,10 +147,7 @@ def test_login_sso_writes_the_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPa
         return _Oidc()
 
     monkeypatch.setattr("botocore.session.Session.create_client", fake_create_client)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.sso._authorization_code",
-        lambda **kwargs: "auth-code",
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.sso._authorization_code", lambda **kwargs: "auth-code")
     login_sso(start_url=START, sso_region="us-east-1", session_name="aws-authenticate")
     cached = json.loads(_cache_file(tmp_path, "aws-authenticate").read_text(encoding="utf-8"))
     assert cached["accessToken"] == "fresh-token"
@@ -174,23 +158,13 @@ def test_login_sso_writes_the_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPa
 
 def test_browser_cannot_open() -> None:
     with pytest.raises(LoginError):
-        _authorization_code(
-            authorize_url="https://oidc.us-east-1.amazonaws.com/authorize",
-            redirect_uri="http://127.0.0.1:9/oauth/callback",
-            state="state",
-            opener=lambda url: False,
-        )
+        _authorization_code(authorize_url="https://oidc.us-east-1.amazonaws.com/authorize", redirect_uri="http://127.0.0.1:9/oauth/callback", state="state", opener=lambda url: False)
 
 
 def test_expired_sso_token_logs_in_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("HOME", str(tmp_path))
     name = _session_name(START)
-    _seed(
-        tmp_path,
-        name,
-        access_token="expired-token",
-        expires_at="2000-01-01T00:00:00Z",
-    )
+    _seed(tmp_path, name, access_token="expired-token", expires_at="2000-01-01T00:00:00Z")
     calls = {"n": 0}
 
     def fake_login(**kwargs: object) -> None:
@@ -222,10 +196,7 @@ def test_register_client_sends_authorization_code_grant(tmp_path: Path, monkeypa
         raise AssertionError(operation_name)
 
     monkeypatch.setattr("botocore.client.BaseClient._make_api_call", fake_make_api_call)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.sso._authorization_code",
-        lambda **kwargs: "auth-code",
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.sso._authorization_code", lambda **kwargs: "auth-code")
     login_sso(start_url=START, sso_region="us-east-1", session_name="aws-authenticate")
     assert seen["clientName"] == "aws-authenticate"
     assert seen["clientType"] == "public"
@@ -257,10 +228,7 @@ def test_missing_registration_expiry_is_omitted(tmp_path: Path, monkeypatch: pyt
         return _Oidc()
 
     monkeypatch.setattr("botocore.session.Session.create_client", fake_create_client)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.sso._authorization_code",
-        lambda **kwargs: "auth-code",
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.sso._authorization_code", lambda **kwargs: "auth-code")
     login_sso(start_url=START, sso_region="us-east-1", session_name="named")
     cached = json.loads(_cache_file(tmp_path, "named").read_text(encoding="utf-8"))
     assert "registrationExpiresAt" not in cached
@@ -268,9 +236,7 @@ def test_missing_registration_expiry_is_omitted(tmp_path: Path, monkeypatch: pyt
 
 
 def _raise_token_error(raw: object, method: str | None = None) -> AuthenticatedSession:
-    raise AuthenticationError("missing token") from SSOTokenLoadError(
-        error_msg="missing",
-    )
+    raise AuthenticationError("missing token") from SSOTokenLoadError(error_msg="missing")
 
 
 def _config_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) -> None:
@@ -284,30 +250,14 @@ def _config_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) ->
 
 
 def test_empty_sso_target_does_not_log_in(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _config_files(
-        tmp_path,
-        monkeypatch,
-        "\n".join(
-            (
-                "[profile app]",
-                "source_profile = base",
-                "",
-                "[profile base]",
-                "region = us-east-1",
-                "",
-            )
-        ),
-    )
+    _config_files(tmp_path, monkeypatch, "\n".join(("[profile app]", "source_profile = base", "", "[profile base]", "region = us-east-1", "")))
     calls = {"n": 0}
 
     def fake_login(**kwargs: object) -> None:
         calls["n"] += 1
 
     monkeypatch.setattr("lupaxa.aws_authenticate.session.login_sso", fake_login)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.open_session",
-        _raise_token_error,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.open_session", _raise_token_error)
     with pytest.raises(LoginError, match="start URL"):
         AuthenticatedSession.from_chain(profile="app")
     assert calls["n"] == 0
@@ -341,10 +291,7 @@ def test_sso_login_walks_to_source_profile(tmp_path: Path, monkeypatch: pytest.M
         seen.update(kwargs)
 
     monkeypatch.setattr("lupaxa.aws_authenticate.session.login_sso", fake_login)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.open_session",
-        _raise_token_error,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.open_session", _raise_token_error)
     with pytest.raises(LoginError, match="usable token"):
         AuthenticatedSession.from_chain(profile="app")
     assert seen["start_url"] == START

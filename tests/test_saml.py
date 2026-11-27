@@ -36,11 +36,7 @@ def test_assertion(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(botocore.session.Session, "create_client", fake_create_client)
     session = AuthenticatedSession.from_saml(ROLE, PRINCIPAL, "YXNzZXJ0aW9u")
     assert session.method == "saml"
-    assert session.credentials == AwsCredentials(
-        "ASIA_SAML",
-        "saml-secret",
-        "saml-token",
-    )
+    assert session.credentials == AwsCredentials("ASIA_SAML", "saml-secret", "saml-token")
     assert seen["SAMLAssertion"] == "YXNzZXJ0aW9u"
     assert "DurationSeconds" not in seen
 
@@ -54,10 +50,7 @@ def test_sts_error(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_create_client(self: object, service: str, **kwargs: object) -> object:
         class _STS:
             def assume_role_with_saml(self, **params: object) -> object:
-                raise ClientError(
-                    {"Error": {"Code": "ValidationError", "Message": "expired"}},
-                    "AssumeRoleWithSAML",
-                )
+                raise ClientError({"Error": {"Code": "ValidationError", "Message": "expired"}}, "AssumeRoleWithSAML")
 
         return _STS()
 

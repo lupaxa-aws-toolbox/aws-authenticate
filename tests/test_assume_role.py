@@ -65,11 +65,7 @@ def test_assume_role_uses_default_session_name(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(botocore.session.Session, "create_client", fake_create_client)
     session = AuthenticatedSession.from_assume_role(_source(), ROLE)
     assert session.method == "assume-role"
-    assert session.credentials == AwsCredentials(
-        "ASIA_ROLE",
-        "role-secret",
-        "assumed-token",
-    )
+    assert session.credentials == AwsCredentials("ASIA_ROLE", "role-secret", "assumed-token")
     assert seen["RoleSessionName"] == "aws-authenticate"
     assert "DurationSeconds" not in seen
 
@@ -86,15 +82,7 @@ def test_assume_role_passes_mfa_code(monkeypatch: pytest.MonkeyPatch) -> None:
         return _STS()
 
     monkeypatch.setattr(botocore.session.Session, "create_client", fake_create_client)
-    AuthenticatedSession.from_assume_role(
-        _source(),
-        ROLE,
-        mfa_serial="arn:aws:iam::123456789012:mfa/user",
-        mfa_code="123456",
-        external_id="outside",
-        duration_seconds=900,
-        role_session_name="script",
-    )
+    AuthenticatedSession.from_assume_role(_source(), ROLE, mfa_serial="arn:aws:iam::123456789012:mfa/user", mfa_code="123456", external_id="outside", duration_seconds=900, role_session_name="script")
     assert seen["SerialNumber"] == "arn:aws:iam::123456789012:mfa/user"
     assert seen["TokenCode"] == "123456"
     assert seen["ExternalId"] == "outside"
@@ -103,10 +91,7 @@ def test_assume_role_passes_mfa_code(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_mfa_prompt_is_used(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.read_mfa_code",
-        lambda prompt: "654321",
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.read_mfa_code", lambda prompt: "654321")
     seen: dict[str, object] = {}
 
     def fake_create_client(self: object, service: str, **kwargs: object) -> object:
@@ -118,11 +103,7 @@ def test_mfa_prompt_is_used(monkeypatch: pytest.MonkeyPatch) -> None:
         return _STS()
 
     monkeypatch.setattr(botocore.session.Session, "create_client", fake_create_client)
-    AuthenticatedSession.from_assume_role(
-        _source(),
-        ROLE,
-        mfa_serial="arn:aws:iam::123456789012:mfa/user",
-    )
+    AuthenticatedSession.from_assume_role(_source(), ROLE, mfa_serial="arn:aws:iam::123456789012:mfa/user")
     assert seen["TokenCode"] == "654321"
 
 
@@ -133,19 +114,13 @@ def test_read_mfa_code_without_tty(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_sts_mfa_required(monkeypatch: pytest.MonkeyPatch) -> None:
-    _patch_assume(
-        monkeypatch,
-        _client_error("AccessDenied", "MultiFactorAuthentication is required"),
-    )
+    _patch_assume(monkeypatch, _client_error("AccessDenied", "MultiFactorAuthentication is required"))
     with pytest.raises(MfaRequiredError):
         AuthenticatedSession.from_assume_role(_source(), ROLE)
 
 
 def test_sts_rejects_invalid_mfa_code(monkeypatch: pytest.MonkeyPatch) -> None:
-    err = _client_error(
-        "AccessDenied",
-        "MultiFactorAuthentication failed with invalid MFA one time pass code",
-    )
+    err = _client_error("AccessDenied", "MultiFactorAuthentication failed with invalid MFA one time pass code")
     _patch_assume(monkeypatch, err)
     with pytest.raises(RoleAssumptionError) as caught:
         AuthenticatedSession.from_assume_role(_source(), ROLE)
@@ -168,20 +143,11 @@ def test_assume_role_mfa_prompt_without_tty(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr("lupaxa.aws_authenticate.mfa.sys.stdin.isatty", lambda: False)
     _patch_assume(monkeypatch, _ok())
     with pytest.raises(MfaRequiredError) as caught:
-        AuthenticatedSession.from_assume_role(
-            _source(),
-            ROLE,
-            mfa_serial="arn:aws:iam::123456789012:mfa/user",
-        )
+        AuthenticatedSession.from_assume_role(_source(), ROLE, mfa_serial="arn:aws:iam::123456789012:mfa/user")
     assert type(caught.value) is MfaRequiredError
 
 
 def test_assume_role_rejects_whitespace_mfa_code(monkeypatch: pytest.MonkeyPatch) -> None:
     _patch_assume(monkeypatch, _ok())
     with pytest.raises(ValueError, match="mfa_code"):
-        AuthenticatedSession.from_assume_role(
-            _source(),
-            ROLE,
-            mfa_serial="arn:aws:iam::123456789012:mfa/user",
-            mfa_code="   ",
-        )
+        AuthenticatedSession.from_assume_role(_source(), ROLE, mfa_serial="arn:aws:iam::123456789012:mfa/user", mfa_code="   ")

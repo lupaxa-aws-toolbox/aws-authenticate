@@ -24,11 +24,7 @@ def test_second_read_sees_the_refresh() -> None:
         METHOD = "explicit"
 
         def load(self) -> RefreshableCredentials:
-            return RefreshableCredentials.create_from_metadata(
-                refresh(),
-                method="explicit",
-                refresh_using=refresh,
-            )
+            return RefreshableCredentials.create_from_metadata(refresh(), method="explicit", refresh_using=refresh)
 
     raw = botocore.session.Session()
     raw.register_component("credential_provider", CredentialResolver([_Provider()]))
@@ -45,11 +41,7 @@ def test_second_read_sees_the_refresh() -> None:
 
 
 def test_client_uses_the_resolved_keys() -> None:
-    session = AuthenticatedSession.from_keys(
-        "AKIA_CLIENT",
-        "client-secret",
-        session_token="client-token",
-    )
+    session = AuthenticatedSession.from_keys("AKIA_CLIENT", "client-secret", session_token="client-token")
     client = session.client("sts", region_name="us-east-1")
     frozen = client._request_signer._credentials.get_frozen_credentials()
     assert frozen.access_key == "AKIA_CLIENT"

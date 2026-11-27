@@ -70,10 +70,7 @@ def test_instance_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
                 "expiry_time": "2999-01-01T00:00:00Z",
             }
 
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.InstanceMetadataFetcher",
-        _Fetcher,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.InstanceMetadataFetcher", _Fetcher)
     session = AuthenticatedSession.from_instance_metadata()
     assert session.method == "iam-role"
     expected = AwsCredentials("ASIA_IMDS", "imds-secret", "imds-token")
@@ -86,10 +83,7 @@ def test_instance_metadata_empty(monkeypatch: pytest.MonkeyPatch) -> None:
             return {}
 
     monkeypatch.delenv("AWS_EC2_METADATA_DISABLED", raising=False)
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.InstanceMetadataFetcher",
-        _EmptyFetcher,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.InstanceMetadataFetcher", _EmptyFetcher)
     with pytest.raises(CredentialsNotFoundError):
         AuthenticatedSession.from_instance_metadata()
 
@@ -97,10 +91,7 @@ def test_instance_metadata_empty(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_container(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIA_ENV")
     monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "env-secret")
-    monkeypatch.setenv(
-        "AWS_CONTAINER_CREDENTIALS_FULL_URI",
-        "http://169.254.170.2/creds",
-    )
+    monkeypatch.setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", "http://169.254.170.2/creds")
 
     class _Fetcher:
         def retrieve_full_uri(self, uri: str, headers: object = None) -> dict[str, str]:
@@ -112,10 +103,7 @@ def test_container(monkeypatch: pytest.MonkeyPatch) -> None:
                 "Expiration": "2999-01-01T00:00:00Z",
             }
 
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.ContainerMetadataFetcher",
-        _Fetcher,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.ContainerMetadataFetcher", _Fetcher)
     session = AuthenticatedSession.from_container()
     assert session.method == "container-role"
     assert session.credentials == AwsCredentials("ASIA_ECS", "ecs-secret", "ecs-token")

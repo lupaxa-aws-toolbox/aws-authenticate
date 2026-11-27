@@ -86,38 +86,20 @@ def login_sso(*, start_url: str, sso_region: str, session_name: str | None = Non
         try:
             client = _oidc_client(sso_region)
             registration = client.register_client(
-                clientName="aws-authenticate",
-                clientType="public",
-                grantTypes=["authorization_code", "refresh_token"],
-                redirectUris=[redirect_uri],
-                issuerUrl=start_url,
-                scopes=["sso:account:access"],
+                clientName="aws-authenticate", clientType="public", grantTypes=["authorization_code", "refresh_token"], redirectUris=[redirect_uri], issuerUrl=start_url, scopes=["sso:account:access"]
             )
         except _OIDC_ERRORS as exc:
             raise LoginError(str(exc)) from exc
         client_id = _text(registration.get("clientId"), "client id")
         client_secret = _text(registration.get("clientSecret"), "client secret")
         code = _authorization_code(
-            authorize_url=_authorize_url(
-                sso_region=sso_region,
-                client_id=client_id,
-                redirect_uri=redirect_uri,
-                state=state,
-                code_challenge=challenge,
-            ),
+            authorize_url=_authorize_url(sso_region=sso_region, client_id=client_id, redirect_uri=redirect_uri, state=state, code_challenge=challenge),
             redirect_uri=redirect_uri,
             state=state,
             server=server,
         )
         try:
-            created = client.create_token(
-                grantType="authorization_code",
-                clientId=client_id,
-                clientSecret=client_secret,
-                code=code,
-                codeVerifier=verifier,
-                redirectUri=redirect_uri,
-            )
+            created = client.create_token(grantType="authorization_code", clientId=client_id, clientSecret=client_secret, code=code, codeVerifier=verifier, redirectUri=redirect_uri)
         except _OIDC_ERRORS as exc:
             raise LoginError(str(exc)) from exc
     finally:
@@ -129,9 +111,7 @@ def login_sso(*, start_url: str, sso_region: str, session_name: str | None = Non
         session_name=session_name,
         client_id=client_id,
         client_secret=client_secret,
-        registration_expires_at=_registration_expires_at(
-            registration.get("clientSecretExpiresAt"),
-        ),
+        registration_expires_at=_registration_expires_at(registration.get("clientSecretExpiresAt")),
         created=created,
     )
 
@@ -159,10 +139,7 @@ def _authorization_code(*, authorize_url: str, redirect_uri: str, state: str, op
 
 def _oidc_client(sso_region: str) -> _OidcClient:
     raw = botocore.session.Session()
-    config = botocore.config.Config(
-        signature_version=botocore.UNSIGNED,
-        region_name=sso_region,
-    )
+    config = botocore.config.Config(signature_version=botocore.UNSIGNED, region_name=sso_region)
     client = raw.create_client("sso-oidc", config=config)
     return cast("_OidcClient", client)
 
@@ -177,7 +154,7 @@ def _authorize_url(*, sso_region: str, client_id: str, redirect_uri: str, state:
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
             "scopes": "sso:account:access",
-        },
+        }
     )
     return f"https://oidc.{sso_region}.amazonaws.com/authorize?{query}"
 
@@ -240,8 +217,4 @@ def _save_token(*, start_url: str, sso_region: str, session_name: str | None, cl
     if isinstance(refresh_token, str) and refresh_token:
         token["refreshToken"] = refresh_token
     cache = JSONFileCache(os.path.expanduser("~/.aws/sso/cache"))
-    SSOTokenLoader(cache=cache).save_token(
-        start_url,
-        token,
-        session_name=session_name,
-    )
+    SSOTokenLoader(cache=cache).save_token(start_url, token, session_name=session_name)

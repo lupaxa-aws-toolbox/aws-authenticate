@@ -25,26 +25,12 @@ from botocore.credentials import (
     ProcessProvider,
     SSOProvider,
 )
-from botocore.exceptions import (
-    ClientError,
-    CredentialRetrievalError,
-    InvalidConfigError,
-    ProfileNotFound,
-    SSOTokenLoadError,
-    TokenRetrievalError,
-    UnauthorizedSSOTokenError,
-)
+from botocore.exceptions import ClientError, CredentialRetrievalError, InvalidConfigError, ProfileNotFound, SSOTokenLoadError, TokenRetrievalError, UnauthorizedSSOTokenError
 from botocore.tokens import SSOTokenProvider
 from botocore.utils import FileWebIdentityTokenLoader, JSONFileCache
 
 from .credentials import AwsCredentials
-from .errors import (
-    AuthenticationError,
-    CredentialsNotFoundError,
-    LoginError,
-    MfaRequiredError,
-    RoleAssumptionError,
-)
+from .errors import AuthenticationError, CredentialsNotFoundError, LoginError, MfaRequiredError, RoleAssumptionError
 from .mfa import read_mfa_code
 from .sso import login_sso
 
@@ -107,10 +93,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
     @classmethod
     def from_environment(cls, region: str | None = None) -> AuthenticatedSession:
         """Return a session for AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."""
-        return open_session(
-            _install(EnvProvider(environ=os.environ), region),
-            method="env",
-        )
+        return open_session(_install(EnvProvider(environ=os.environ), region), method="env")
 
     @classmethod
     def from_chain(cls, profile: str | None = None, region: str | None = None) -> AuthenticatedSession:
@@ -129,36 +112,16 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         role = require_text(role_name, "role_name")
         session_name = _sso_session_name(start)
         with tempfile.TemporaryDirectory(prefix="aws-authenticate-") as directory:
-            config_path, credentials_path = _write_sso_files(
-                Path(directory),
-                session_name,
-                start,
-                portal_region,
-                account,
-                role,
-            )
+            config_path, credentials_path = _write_sso_files(Path(directory), session_name, start, portal_region, account, role)
             raw = botocore.session.Session(profile=session_name)
             raw.set_config_variable("config_file", str(config_path))
             raw.set_config_variable("credentials_file", str(credentials_path))
             if region is not None:
                 raw.set_config_variable("region", region)
             cache = JSONFileCache(os.path.expanduser("~/.aws/sso/cache"))
-            token_provider = SSOTokenProvider(
-                raw,
-                cache=cache,
-                profile_name=session_name,
-            )
-            provider = SSOProvider(
-                load_config=lambda: raw.full_config,
-                client_creator=raw.create_client,
-                profile_name=session_name,
-                token_provider=token_provider,
-                token_cache=cache,
-            )
-            raw.register_component(
-                "credential_provider",
-                CredentialResolver([provider]),
-            )
+            token_provider = SSOTokenProvider(raw, cache=cache, profile_name=session_name)
+            provider = SSOProvider(load_config=lambda: raw.full_config, client_creator=raw.create_client, profile_name=session_name, token_provider=token_provider, token_cache=cache)
+            raw.register_component("credential_provider", CredentialResolver([provider]))
             return _open_sso(raw, method="sso")
 
     @classmethod
@@ -207,30 +170,14 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
 
             mfa_prompter = prompter
 
-        fetcher = AssumeRoleCredentialFetcher(
-            client_creator=source._session.create_client,
-            source_credentials=source.get_credentials(),
-            role_arn=arn,
-            extra_args=extra_args,
-            mfa_prompter=mfa_prompter,
-        )
-        creds = DeferredRefreshableCredentials(
-            refresh_using=fetcher.fetch_credentials,
-            method="assume-role",
-        )
+        fetcher = AssumeRoleCredentialFetcher(client_creator=source._session.create_client, source_credentials=source.get_credentials(), role_arn=arn, extra_args=extra_args, mfa_prompter=mfa_prompter)
+        creds = DeferredRefreshableCredentials(refresh_using=fetcher.fetch_credentials, method="assume-role")
         provider = _HoldingProvider(creds)
         return open_session(_install(provider, region), method="assume-role")
 
     @classmethod
     def from_web_identity(
-        cls,
-        role_arn: str,
-        *,
-        token: str | None = None,
-        token_file: str | None = None,
-        role_session_name: str | None = None,
-        duration_seconds: int | None = None,
-        region: str | None = None,
+        cls, role_arn: str, *, token: str | None = None, token_file: str | None = None, role_session_name: str | None = None, duration_seconds: int | None = None, region: str | None = None
     ) -> AuthenticatedSession:
         """Return a session that assumes a role with a web identity token."""
         arn = require_text(role_arn, "role_arn")
@@ -241,9 +188,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
             try:
                 token_value = Path(token_file).read_text(encoding="utf-8")
             except OSError as exc:
-                raise CredentialsNotFoundError(
-                    f"Web identity token file not found: {token_file}",
-                ) from exc
+                raise CredentialsNotFoundError(f"Web identity token file not found: {token_file}") from exc
             token_value = token_value.strip()
             if not token_value:
                 raise CredentialsNotFoundError("Web identity token is required")
@@ -263,21 +208,10 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
             extra_args["DurationSeconds"] = duration_seconds
 
         raw = botocore.session.Session()
-        fetcher = AssumeRoleWithWebIdentityCredentialFetcher(
-            client_creator=raw.create_client,
-            web_identity_token_loader=web_identity_token_loader,
-            role_arn=arn,
-            extra_args=extra_args,
-        )
-        creds = DeferredRefreshableCredentials(
-            refresh_using=fetcher.fetch_credentials,
-            method="assume-role-with-web-identity",
-        )
+        fetcher = AssumeRoleWithWebIdentityCredentialFetcher(client_creator=raw.create_client, web_identity_token_loader=web_identity_token_loader, role_arn=arn, extra_args=extra_args)
+        creds = DeferredRefreshableCredentials(refresh_using=fetcher.fetch_credentials, method="assume-role-with-web-identity")
         provider = _HoldingProvider(creds)
-        return open_session(
-            _install(provider, region),
-            method="assume-role-with-web-identity",
-        )
+        return open_session(_install(provider, region), method="assume-role-with-web-identity")
 
     @classmethod
     def from_saml(cls, role_arn: str, principal_arn: str, assertion: str, *, duration_seconds: int | None = None, region: str | None = None) -> AuthenticatedSession:
@@ -297,13 +231,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
 
         raw = botocore.session.Session()
         try:
-            sts = raw.create_client(
-                "sts",
-                region_name=region,
-                config=botocore.config.Config(
-                    signature_version=botocore.UNSIGNED,
-                ),
-            )
+            sts = raw.create_client("sts", region_name=region, config=botocore.config.Config(signature_version=botocore.UNSIGNED))
             response = sts.assume_role_with_saml(**params)
         except AuthenticationError:
             raise
@@ -313,12 +241,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
             raise map_aws_error(exc) from exc
 
         keys = response["Credentials"]
-        creds = Credentials(
-            keys["AccessKeyId"],
-            keys["SecretAccessKey"],
-            keys.get("SessionToken"),
-            method="saml",
-        )
+        creds = Credentials(keys["AccessKeyId"], keys["SecretAccessKey"], keys.get("SessionToken"), method="saml")
         provider = _HoldingProvider(creds)
         return open_session(_install(provider, region), method="saml")
 
@@ -331,15 +254,8 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
         def load_config() -> dict[str, object]:
             return {"profiles": {profile_name: {"credential_process": cred_process}}}
 
-        provider = ProcessProvider(
-            profile_name=profile_name,
-            load_config=load_config,
-            popen=subprocess.Popen,
-        )
-        return open_session(
-            _install(provider, region),
-            method="custom-process",
-        )
+        provider = ProcessProvider(profile_name=profile_name, load_config=load_config, popen=subprocess.Popen)
+        return open_session(_install(provider, region), method="custom-process")
 
     @classmethod
     def from_instance_metadata(cls, region: str | None = None) -> AuthenticatedSession:
@@ -350,10 +266,7 @@ class AuthenticatedSession(boto3.session.Session):  # type: ignore[misc]
     @classmethod
     def from_container(cls, region: str | None = None) -> AuthenticatedSession:
         """Return a session for ECS or EKS container credentials."""
-        provider = ContainerProvider(
-            environ=os.environ,
-            fetcher=ContainerMetadataFetcher(),
-        )
+        provider = ContainerProvider(environ=os.environ, fetcher=ContainerMetadataFetcher())
         return open_session(_install(provider, region), method="container-role")
 
 
@@ -398,11 +311,7 @@ def _open_sso(raw: botocore.session.Session, method: str | None = None) -> Authe
         if not _is_token_error(exc):
             raise
         start_url, sso_region, session_name = _sso_login_target(raw)
-        login_sso(
-            start_url=start_url,
-            sso_region=sso_region,
-            session_name=session_name,
-        )
+        login_sso(start_url=start_url, sso_region=sso_region, session_name=session_name)
     try:
         return open_session(raw, method=method)
     except AuthenticationError as exc:
@@ -415,10 +324,7 @@ def _is_token_error(exc: BaseException) -> bool:
     current: BaseException | None = exc
     seen: set[int] = set()
     while current is not None and id(current) not in seen:
-        if isinstance(
-            current,
-            UnauthorizedSSOTokenError | SSOTokenLoadError | TokenRetrievalError,
-        ):
+        if isinstance(current, UnauthorizedSSOTokenError | SSOTokenLoadError | TokenRetrievalError):
             return True
         seen.add(id(current))
         current = current.__cause__
@@ -426,10 +332,7 @@ def _is_token_error(exc: BaseException) -> bool:
 
 
 def _sso_session_name(start_url: str) -> str:
-    digest = hashlib.sha1(
-        start_url.encode("utf-8"),
-        usedforsecurity=False,
-    ).hexdigest()
+    digest = hashlib.sha1(start_url.encode("utf-8"), usedforsecurity=False).hexdigest()
     return f"aws-authenticate-{digest[:12]}"
 
 
@@ -467,17 +370,10 @@ def _profile_sso_target(loaded: object, profile: dict[str, object]) -> tuple[str
             sso_session = sessions.get(name, {})
         if not isinstance(sso_session, dict):
             sso_session = {}
-        start_url = sso_session.get(
-            "sso_start_url",
-            profile.get("sso_start_url", ""),
-        )
+        start_url = sso_session.get("sso_start_url", profile.get("sso_start_url", ""))
         sso_region = sso_session.get("sso_region", profile.get("sso_region", ""))
         return _sso_text(start_url), _sso_text(sso_region), name
-    return (
-        _sso_text(profile.get("sso_start_url", "")),
-        _sso_text(profile.get("sso_region", "")),
-        None,
-    )
+    return (_sso_text(profile.get("sso_start_url", "")), _sso_text(profile.get("sso_region", "")), None)
 
 
 def _sso_text(value: object) -> str:
@@ -501,7 +397,7 @@ def _write_sso_files(directory: Path, session_name: str, start_url: str, sso_reg
                 f"sso_account_id = {account_id}",
                 f"sso_role_name = {role_name}",
                 "",
-            ),
+            )
         ),
         encoding="utf-8",
     )

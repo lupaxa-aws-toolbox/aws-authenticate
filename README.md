@@ -407,11 +407,7 @@ for page in pages:
     for reservation in page["Reservations"]:
         for instance in reservation["Instances"]:
             name = next(
-                (
-                    tag["Value"]
-                    for tag in instance.get("Tags", [])
-                    if tag["Key"] == "Name"
-                ),
+                (tag["Value"] for tag in instance.get("Tags", []) if tag["Key"] == "Name"),
                 "",
             )
             print(

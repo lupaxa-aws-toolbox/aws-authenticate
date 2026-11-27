@@ -19,11 +19,7 @@ def _aws_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: str) -> No
 
 
 def test_profile_and_chain_return_the_same_keys(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _aws_files(
-        tmp_path,
-        monkeypatch,
-        "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n",
-    )
+    _aws_files(tmp_path, monkeypatch, "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n")
     via_profile = AuthenticatedSession.from_profile("prod")
     via_chain = AuthenticatedSession.from_chain(profile="prod")
     expected = AwsCredentials("AKIA_PROD", "prod-secret", None)
@@ -34,11 +30,7 @@ def test_profile_and_chain_return_the_same_keys(tmp_path: Path, monkeypatch: pyt
 
 
 def test_padded_profile_name_matches_exact(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _aws_files(
-        tmp_path,
-        monkeypatch,
-        "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n",
-    )
+    _aws_files(tmp_path, monkeypatch, "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n")
     exact = AuthenticatedSession.from_profile("prod")
     padded = AuthenticatedSession.from_profile(" prod ")
     expected = AwsCredentials("AKIA_PROD", "prod-secret", None)
@@ -48,11 +40,7 @@ def test_padded_profile_name_matches_exact(tmp_path: Path, monkeypatch: pytest.M
 
 
 def test_unknown_profile_is_missing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    _aws_files(
-        tmp_path,
-        monkeypatch,
-        "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n",
-    )
+    _aws_files(tmp_path, monkeypatch, "[prod]\naws_access_key_id = AKIA_PROD\naws_secret_access_key = prod-secret\n")
     with pytest.raises(CredentialsNotFoundError):
         AuthenticatedSession.from_profile("missing")
 

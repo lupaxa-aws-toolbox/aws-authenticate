@@ -50,21 +50,11 @@ def test_token_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
 
     def spy_fetcher(
-        client_creator: object,
-        web_identity_token_loader: object,
-        role_arn: str,
-        extra_args: object = None,
-        cache: object = None,
-        expiry_window_seconds: object = None,
+        client_creator: object, web_identity_token_loader: object, role_arn: str, extra_args: object = None, cache: object = None, expiry_window_seconds: object = None
     ) -> AssumeRoleWithWebIdentityCredentialFetcher:
         captured["loader"] = web_identity_token_loader
         return AssumeRoleWithWebIdentityCredentialFetcher(
-            client_creator=client_creator,
-            web_identity_token_loader=web_identity_token_loader,
-            role_arn=role_arn,
-            extra_args=extra_args,
-            cache=cache,
-            expiry_window_seconds=expiry_window_seconds,
+            client_creator=client_creator, web_identity_token_loader=web_identity_token_loader, role_arn=role_arn, extra_args=extra_args, cache=cache, expiry_window_seconds=expiry_window_seconds
         )
 
     def fake_create_client(self: object, service: str, **kwargs: object) -> object:
@@ -75,10 +65,7 @@ def test_token_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
         return _STS()
 
-    monkeypatch.setattr(
-        "lupaxa.aws_authenticate.session.AssumeRoleWithWebIdentityCredentialFetcher",
-        spy_fetcher,
-    )
+    monkeypatch.setattr("lupaxa.aws_authenticate.session.AssumeRoleWithWebIdentityCredentialFetcher", spy_fetcher)
     monkeypatch.setattr(botocore.session.Session, "create_client", fake_create_client)
     session = AuthenticatedSession.from_web_identity(ROLE, token_file=str(token_path))
     assert session.credentials.access_key_id == "ASIA_WEB"
@@ -106,10 +93,7 @@ def test_sts_error(monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_create_client(self: object, service: str, **kwargs: object) -> object:
         class _STS:
             def assume_role_with_web_identity(self, **params: object) -> object:
-                raise ClientError(
-                    {"Error": {"Code": "AccessDenied", "Message": "denied"}},
-                    "AssumeRoleWithWebIdentity",
-                )
+                raise ClientError({"Error": {"Code": "AccessDenied", "Message": "denied"}}, "AssumeRoleWithWebIdentity")
 
         return _STS()
 

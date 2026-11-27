@@ -1,13 +1,7 @@
 """Authenticate to AWS and return one session type."""
 
 from .credentials import AwsCredentials
-from .errors import (
-    AuthenticationError,
-    CredentialsNotFoundError,
-    LoginError,
-    MfaRequiredError,
-    RoleAssumptionError,
-)
+from .errors import AuthenticationError, CredentialsNotFoundError, LoginError, MfaRequiredError, RoleAssumptionError
 from .session import AuthenticatedSession
 from .version import __version__, get_version
 
